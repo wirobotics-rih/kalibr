@@ -1,10 +1,14 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 print("importing libraries")
-import rosbag
-import cv_bridge
+# NB: rosbag (ROS1) / cv_bridge were unused top-level imports here; the
+# actual bag reading now goes through kalibr_common.ImageDatasetReader,
+# which uses rosbag2_py against mcap bags (see that file for details).
 
 import sm
-from sm import PlotCollection
+# PlotCollection wraps figures in a wxPython window -- only needed for the
+# interactive --plot view, which this environment doesn't have wx installed
+# for. Deferred to right before its one use site (guarded by `doPlot`) so
+# a normal (non---plot) run doesn't need wx at all.
 import aslam_cv as acv
 import aslam_cameras_april as acv_april
 import aslam_cv_backend as acvb
@@ -292,6 +296,7 @@ def main():
                 
                 #plot added views
                 if success and doPlot:
+                    from sm import PlotCollection
                     recent_view = calibrator.views[-1]
                     cams_in_view = [obs_tuple[0] for obs_tuple in recent_view.rig_observations]
                     plotter = PlotCollection.PlotCollection("Added view (stamp: {0})".format(timestamp))

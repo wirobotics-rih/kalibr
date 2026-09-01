@@ -1,21 +1,39 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.8)
 project(incremental_calibration)
 
 set(CMAKE_CXX_STANDARD 14)
 
-find_package(catkin REQUIRED COMPONENTS sm_eigen aslam_backend)
+find_package(ament_cmake REQUIRED)
+find_package(sm_eigen REQUIRED)
+find_package(aslam_backend REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system thread)
 find_package(Eigen3 REQUIRED)
+find_package(TBB REQUIRED)
 
-catkin_package(
-  LIBRARIES ${PROJECT_NAME}
-  INCLUDE_DIRS include
-  CATKIN_DEPENDS sm_eigen
+# Workaround for build machines where `libsuitesparse-dev` cannot be
+# installed via apt (no sudo access). See sparse_block_matrix/CMakeLists.txt.
+set(SUITESPARSE_LOCAL_PREFIX "$ENV{HOME}/.local/opt/suitesparse/usr")
+if(EXISTS "${SUITESPARSE_LOCAL_PREFIX}")
+  list(APPEND SUITESPARSE_INCLUDE_DIR_HINTS
+    "${SUITESPARSE_LOCAL_PREFIX}/include"
+    "${SUITESPARSE_LOCAL_PREFIX}/include/suitesparse")
+  list(APPEND SUITESPARSE_LIBRARY_DIR_HINTS
+    "${SUITESPARSE_LOCAL_PREFIX}/lib/x86_64-linux-gnu")
+  set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+  set(CMAKE_INSTALL_RPATH "${SUITESPARSE_LOCAL_PREFIX}/lib/x86_64-linux-gnu")
+endif()
+list(APPEND CMAKE_MODULE_PATH ${sparse_block_matrix_DIR})
+find_package(sparse_block_matrix REQUIRED)
+find_package(SuiteSparse REQUIRED)
+
+include_directories(include
+  ${sm_eigen_INCLUDE_DIRS}
+  ${aslam_backend_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIR}
+  ${SUITESPARSE_INCLUDE_DIRS}
 )
 
-include_directories(include ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
-
-add_library(${PROJECT_NAME}
+add_library(${PROJECT_NAME} SHARED
   src/base/Serializable.cpp
   src/base/Timestamp.cpp
   src/base/Condition.cpp
@@ -42,35 +60,26 @@ add_library(${PROJECT_NAME}
   src/algorithms/marginalize.cpp
   src/algorithms/linalg.cpp
 )
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${TBB_LIBRARIES})
-
-# if(CATKIN_ENABLE_TESTING)
-#   # Avoid clash with tr1::tuple:
-#   # https://code.google.com/p/googletest/source/browse/trunk/README?r=589#257
-#   add_definitions(-DGTEST_USE_OWN_TR1_TUPLE=0)
-
-#   catkin_add_gtest(${PROJECT_NAME}_test
-#     test/test_main.cpp
-#     test/VectorDesignVariableTest.cpp
-#     test/AlgorithmsTest.cpp
-#     test/OptimizationProblemTest.cpp
-#     test/IncrementalOptimizationProblemTest.cpp
-#     test/LinearSolverTest.cpp
-#     )
-#   target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
-# endif()
-
-##################
-## Installation ##
-##################
+target_link_libraries(${PROJECT_NAME}
+  ${aslam_backend_LIBRARIES}
+  ${sm_eigen_LIBRARIES}
+  ${Boost_LIBRARIES}
+  TBB::tbb
+  ${SUITESPARSE_LIBRARIES}
+)
 
 install(TARGETS ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
 )
 
-## Mark cpp header files for installation
 install(DIRECTORY include/
-  DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
+  DESTINATION include
 )
+
+ament_export_include_directories(include)
+ament_export_libraries(${PROJECT_NAME})
+ament_export_dependencies(sm_eigen aslam_backend Boost)
+
+ament_package()

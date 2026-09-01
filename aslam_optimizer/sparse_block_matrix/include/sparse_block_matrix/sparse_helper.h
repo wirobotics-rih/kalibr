@@ -75,7 +75,10 @@ namespace {
   template<>
   struct IntType< long >
   {
-      static const int intType = CHOLMOD_INTLONG;
+      // CHOLMOD_INTLONG (mixed 32/64-bit indices) was removed in
+      // SuiteSparse >= 5; CHOLMOD_LONG is the correct replacement for the
+      // "long"-indexed case.
+      static const int intType = CHOLMOD_LONG;
   };
   template<>
   struct IntType< int >

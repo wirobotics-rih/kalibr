@@ -1,17 +1,10 @@
-# Import the numpy to Eigen type conversion.
-import roslib; roslib.load_manifest('numpy_eigen'); import numpy_eigen
-import os
+# Import the numpy to Eigen type conversion and the aslam_backend Python
+# bindings first so the boost::python types referenced by
+# libincremental_calibration_python's exported classes already exist.
+import numpy_eigen  # noqa: F401
+import aslam_backend  # noqa: F401
 
-isCompiled = False
-pathToSo = os.path.dirname(os.path.realpath(__file__))
-if os.path.isfile(os.path.join(pathToSo,"libincremental_calibration_python.so")):    
-    roslib.load_manifest('aslam_backend_python'); import aslam_backend
-    # Import the the C++ exports from your package library.
-    from .libincremental_calibration_python import *
-    # Import other files in the directory
-    # from mypyfile import *
-    isCompiled = True
-else:
-    print("Warning: the package incremental_calibration_python is not compiled. Type 'rosmake incremental_calibration_python' if you need this.")
-    PACKAGE_IS_NOT_COMPILED = True;
+# Import the C++ exports from this package's compiled extension module.
+from .libincremental_calibration_python import *  # noqa: F401,F403
 
+isCompiled = True

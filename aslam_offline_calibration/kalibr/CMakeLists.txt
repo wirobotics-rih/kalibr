@@ -1,73 +1,74 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.8)
 project(kalibr)
 
-find_package(catkin REQUIRED COMPONENTS
-  aslam_cv_python
-  aslam_backend
-  aslam_backend_expressions
-  aslam_backend_python
-  incremental_calibration_python
-  aslam_cameras_april
-  aslam_splines_python
-  numpy_eigen
-  python_module
-  sparse_block_matrix
-  sm_python
-  aslam_cv_backend_python
-)
-
-catkin_package(
-  INCLUDE_DIRS include  
-  LIBRARIES ${PROJECT_NAME}
-)
+find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
+find_package(aslam_backend REQUIRED)
+find_package(aslam_backend_expressions REQUIRED)
+find_package(numpy_eigen REQUIRED)
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development NumPy)
+find_package(Boost REQUIRED COMPONENTS python312)
 
 ##################################
 # error terms (+python export)
 ##################################
-include_directories(include ${catkin_INCLUDE_DIRS})
+include_directories(include
+  ${aslam_backend_INCLUDE_DIRS}
+  ${aslam_backend_expressions_INCLUDE_DIRS}
+  ${numpy_eigen_INCLUDE_DIRS}
+)
 
-add_library(${PROJECT_NAME}_errorterms
+add_library(${PROJECT_NAME}_errorterms SHARED
   src/EuclideanError.cpp
   src/GyroscopeError.cpp
   src/AccelerometerError.cpp
 )
-target_link_libraries(${PROJECT_NAME}_errorterms ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_errorterms
+  ${aslam_backend_LIBRARIES}
+  ${aslam_backend_expressions_LIBRARIES}
+)
 
-# NB: The ".." is a hack to install the Python bindings to a global location to
-# then be able to import it into a local context project. This is required to
-# work-around having multiple Python packages in one catkin package and the way
-# the PYTHON_PATH overloads work.
-add_python_export_library(${PROJECT_NAME}_errorterms_python python/${PROJECT_NAME}_errorterms/..
+# NB: installed directly into the top level of the Python install
+# directory (not nested under a kalibr_errorterms/ package dir) because
+# python/kalibr_errorterms/__init__.py does a top-level
+# `from libkalibr_errorterms_python import *` (a historical artifact of
+# the original catkin "install to a global location" hack).
+add_library(libkalibr_errorterms_python MODULE
   src/module.cpp
 )
-target_link_libraries(${PROJECT_NAME}_errorterms_python ${PROJECT_NAME}_errorterms)
-
-##################################
-# tests
-##################################
-if(CATKIN_ENABLE_TESTING)
-  add_definitions(-DGTEST_USE_OWN_TR1_TUPLE=0)
-
-  catkin_add_gtest(${PROJECT_NAME}_test
-    test/test_main.cpp
-    test/TestErrorTerms.cpp
-    )
-  target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME}_errorterms)
-endif()
-
-##################################
-# EXPORT
-##################################
-catkin_python_setup()
-
-install(TARGETS ${${PROJECT_NAME}_TARGETS}
-    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+set_target_properties(libkalibr_errorterms_python PROPERTIES
+  PREFIX ""
+  OUTPUT_NAME "libkalibr_errorterms_python"
+  SUFFIX ".so"
+)
+target_include_directories(libkalibr_errorterms_python PRIVATE
+  ${Python3_INCLUDE_DIRS}
+  ${Python3_NumPy_INCLUDE_DIRS}
+)
+target_link_libraries(libkalibr_errorterms_python PRIVATE
+  Boost::python312
+  ${Boost_LIBRARIES}
+  Python3::Python
+  ${PROJECT_NAME}_errorterms
 )
 
-catkin_install_python(
-  PROGRAMS
+##################################
+# Python packages
+##################################
+ament_python_install_package(kalibr_errorterms PACKAGE_DIR python/kalibr_errorterms)
+ament_python_install_package(kalibr_common PACKAGE_DIR python/kalibr_common)
+ament_python_install_package(kalibr_camera_calibration PACKAGE_DIR python/kalibr_camera_calibration)
+ament_python_install_package(kalibr_imu_camera_calibration PACKAGE_DIR python/kalibr_imu_camera_calibration)
+ament_python_install_package(kalibr_rs_camera_calibration PACKAGE_DIR python/kalibr_rs_camera_calibration)
+
+install(TARGETS libkalibr_errorterms_python
+  DESTINATION ${PYTHON_INSTALL_DIR}
+)
+
+##################################
+# executables (installed as ros2-run-able scripts)
+##################################
+install(PROGRAMS
     python/kalibr_bagcreater
     python/kalibr_camera_focus
     python/kalibr_bagextractor
@@ -78,5 +79,21 @@ catkin_install_python(
     python/kalibr_calibrate_imu_camera
     python/kalibr_create_target_pdf
     python/kalibr_calibrate_rs_cameras
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  DESTINATION lib/${PROJECT_NAME}
 )
+
+install(TARGETS ${PROJECT_NAME}_errorterms
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
+install(DIRECTORY include/
+  DESTINATION include
+)
+
+ament_export_include_directories(include)
+ament_export_libraries(${PROJECT_NAME}_errorterms)
+ament_export_dependencies(aslam_backend aslam_backend_expressions)
+
+ament_package()

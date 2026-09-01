@@ -1,58 +1,61 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.8)
 project(aslam_cv_backend)
 
-find_package(catkin REQUIRED COMPONENTS
-  sm_common
-  sm_boost
-  sm_kinematics
-  sm_eigen
-  sm_opencv
-  sm_property_tree
-  sm_logging
-  sm_timing
-  aslam_backend
-  aslam_backend_expressions
-  aslam_time
-  aslam_cameras
-  opencv2_catkin
-  sparse_block_matrix
-)
+find_package(ament_cmake REQUIRED)
+find_package(sm_common REQUIRED)
+find_package(sm_boost REQUIRED)
+find_package(sm_kinematics REQUIRED)
+find_package(sm_eigen REQUIRED)
+find_package(sm_opencv REQUIRED)
+find_package(sm_property_tree REQUIRED)
+find_package(sm_logging REQUIRED)
+find_package(sm_timing REQUIRED)
+find_package(aslam_backend REQUIRED)
+find_package(aslam_backend_expressions REQUIRED)
+find_package(aslam_time REQUIRED)
+find_package(aslam_cameras REQUIRED)
+find_package(sparse_block_matrix REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system)
 
-catkin_package(
-  LIBRARIES ${PROJECT_NAME}
-  INCLUDE_DIRS include
+include_directories(include
+  ${sm_common_INCLUDE_DIRS}
+  ${sm_boost_INCLUDE_DIRS}
+  ${sm_kinematics_INCLUDE_DIRS}
+  ${sm_eigen_INCLUDE_DIRS}
+  ${sm_opencv_INCLUDE_DIRS}
+  ${sm_property_tree_INCLUDE_DIRS}
+  ${sm_logging_INCLUDE_DIRS}
+  ${sm_timing_INCLUDE_DIRS}
+  ${aslam_backend_INCLUDE_DIRS}
+  ${aslam_backend_expressions_INCLUDE_DIRS}
+  ${aslam_time_INCLUDE_DIRS}
+  ${aslam_cameras_INCLUDE_DIRS}
+  ${sparse_block_matrix_INCLUDE_DIRS}
 )
 
-include_directories(include ${catkin_INCLUDE_DIRS})
-
-add_library(${PROJECT_NAME}
+add_library(${PROJECT_NAME} SHARED
   src/GridCalibrationTargetDesignVariableContainer.cpp
-  # src/CameraGeometryDesignVariableContainer.cpp
-  # src/NCameraSystemDesignVariableContainer.cpp
 )
-target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}
+  ${aslam_backend_LIBRARIES}
+  ${aslam_backend_expressions_LIBRARIES}
+  ${aslam_time_LIBRARIES}
+  ${aslam_cameras_LIBRARIES}
+  ${Boost_LIBRARIES}
+)
 
-if(CATKIN_ENABLE_TESTING)
-  # Avoid clash with tr1::tuple: https://code.google.com/p/googletest/source/browse/trunk/README?r=589#257
-  add_definitions(-DGTEST_USE_OWN_TR1_TUPLE=0)
-
-  catkin_add_gtest(${PROJECT_NAME}_test
-    test/test_main.cpp
-    )
-  target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
-endif()
-
-##################
-## Installation ##
-##################
 install(TARGETS ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
 )
 
-## Mark cpp header files for installation
 install(DIRECTORY include/
-  DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
+  DESTINATION include
 )
+
+ament_export_include_directories(include)
+ament_export_libraries(${PROJECT_NAME})
+ament_export_dependencies(sm_common sm_boost sm_kinematics sm_eigen sm_opencv sm_property_tree sm_logging sm_timing aslam_backend aslam_backend_expressions aslam_time aslam_cameras sparse_block_matrix Boost)
+
+ament_package()

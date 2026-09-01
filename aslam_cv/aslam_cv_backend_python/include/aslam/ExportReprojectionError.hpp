@@ -3,7 +3,13 @@
 #include <sstream>
 #include <aslam/Frame.hpp>
 #include <aslam/backend/ReprojectionError.hpp>
-#include <aslam/backend/CovarianceReprojectionError.hpp>
+// NOTE: <aslam/backend/CovarianceReprojectionError.hpp> (needed by
+// exportCovarianceReprojectionError() below) unconditionally pulls in
+// <aslam/splines/BSplinePoseDesignVariable.hpp> from the bsplines/
+// aslam_splines packages, which are intentionally not ported (they're
+// only used for camera-IMU calibration, not kalibr_calibrate_cameras).
+// exportCovarianceReprojectionError() and its include are therefore
+// disabled below; see the matching change in src/module.cpp.
 #include <aslam/backend/SimpleReprojectionError.hpp>
 #include <aslam/backend/HomogeneousExpression.hpp>
 #include <aslam/backend/CameraDesignVariable.hpp>
@@ -60,39 +66,45 @@ void exportReprojectionError(const std::string & camName) {
 
 }
 
-template<typename CAMERA_GEOMETRY_T>
-void exportCovarianceReprojectionError(const std::string & camName)
-{
-  std::string name = camName + "ReprojectionErrorAdaptiveCovariance";
-  using namespace boost::python;
-  using namespace aslam;
-  using namespace aslam::backend;
-  typedef CAMERA_GEOMETRY_T geometry_t;
-  typedef DescriptorBase descriptor_t;
-  typedef Frame<geometry_t> frame_t;
-  typedef typename frame_t::keypoint_t keypoint_t;
-
-  class_<
-    CovarianceReprojectionError<frame_t>,
-    boost::shared_ptr<CovarianceReprojectionError<frame_t>
-  >,bases< ErrorTerm > >(
-      name.c_str(),
-		  init<
-        const frame_t *,
-        int,
-        HomogeneousExpression,
-        CameraDesignVariable<geometry_t>,
-        aslam::splines::BSplinePoseDesignVariable*
-      >
-      (
-        (name + "( frame, keypointIndex, homogeneousPointExpression, CameraDesignVariable, bsplineDesignVariable)").c_str()
-      )
-    )
-		.def("observationTime", &CovarianceReprojectionError<frame_t>::observationTime)
-		.def("covarianceMap",  &CovarianceReprojectionError<frame_t>::covarianceMap)
-		;
-
-}
+// exportCovarianceReprojectionError() is disabled: it needs
+// <aslam/backend/CovarianceReprojectionError.hpp>, which requires
+// bsplines/aslam_splines (see the note on the disabled include above).
+// It's only used for the rolling-shutter adaptive-covariance error term,
+// not needed by kalibr_calibrate_cameras.
+//
+// template<typename CAMERA_GEOMETRY_T>
+// void exportCovarianceReprojectionError(const std::string & camName)
+// {
+//   std::string name = camName + "ReprojectionErrorAdaptiveCovariance";
+//   using namespace boost::python;
+//   using namespace aslam;
+//   using namespace aslam::backend;
+//   typedef CAMERA_GEOMETRY_T geometry_t;
+//   typedef DescriptorBase descriptor_t;
+//   typedef Frame<geometry_t> frame_t;
+//   typedef typename frame_t::keypoint_t keypoint_t;
+//
+//   class_<
+//     CovarianceReprojectionError<frame_t>,
+//     boost::shared_ptr<CovarianceReprojectionError<frame_t>
+//   >,bases< ErrorTerm > >(
+//       name.c_str(),
+// 		  init<
+//         const frame_t *,
+//         int,
+//         HomogeneousExpression,
+//         CameraDesignVariable<geometry_t>,
+//         aslam::splines::BSplinePoseDesignVariable*
+//       >
+//       (
+//         (name + "( frame, keypointIndex, homogeneousPointExpression, CameraDesignVariable, bsplineDesignVariable)").c_str()
+//       )
+//     )
+// 		.def("observationTime", &CovarianceReprojectionError<frame_t>::observationTime)
+// 		.def("covarianceMap",  &CovarianceReprojectionError<frame_t>::covarianceMap)
+// 		;
+//
+// }
 
 template<typename CAMERA_GEOMETRY_T>
 void exportReprojectionErrors(const std::string & camName) {

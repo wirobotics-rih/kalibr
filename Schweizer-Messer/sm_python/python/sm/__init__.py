@@ -2,7 +2,19 @@ import numpy_eigen
 import inspect
 
 from .libsm_python import *
-from .plotCoordinateFrame import plotCoordinateFrame
+
+# Lazy — plotCoordinateFrame.py imports pylab/matplotlib at module load time,
+# which drags in whatever numpy this machine's matplotlib/apt install was
+# built against. Most callers of `import sm` (e.g. kalibr_calibrate_cameras
+# without --plot/--show-extraction) never actually call plotCoordinateFrame,
+# so importing matplotlib eagerly here would fail `import sm` entirely on any
+# machine with a numpy/matplotlib ABI mismatch, for no reason. Deferring the
+# import until the function is actually called keeps `import sm` itself
+# independent of matplotlib's state.
+def plotCoordinateFrame(*args, **kwargs):
+    from .plotCoordinateFrame import plotCoordinateFrame as _plotCoordinateFrame
+    return _plotCoordinateFrame(*args, **kwargs)
+
 from .Progress import Progress
 from .Progress import Progress2
 from .saveFigTight import saveFigTight

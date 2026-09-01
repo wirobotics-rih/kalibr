@@ -1,6 +1,13 @@
 #ifndef NUMPY_EIGEN_TYPE_TRAITS_HPP
 #define NUMPY_EIGEN_TYPE_TRAITS_HPP
 
+// NumPy >= 2.0 renamed the NPY_NTYPES enumerator to NPY_NTYPES_LEGACY.
+// NPY_NTYPES_LEGACY is an enum value (not a macro), so it can't be detected
+// with #ifdef; just alias the old name unconditionally when it's missing.
+#ifndef NPY_NTYPES
+#define NPY_NTYPES NPY_NTYPES_LEGACY
+#endif
+
 #define THROW_TYPE_ERROR(msg)						\
   {									\
     std::stringstream type_error_ss;					\

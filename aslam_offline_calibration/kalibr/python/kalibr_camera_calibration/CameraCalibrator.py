@@ -1,6 +1,7 @@
 from __future__ import print_function #handle print in 2.x python
 import sm
-from sm import PlotCollection
+# (no PlotCollection import here -- unused in this file; see CameraUtils.py's
+# generateReport() for the one place it's actually needed, deferred there.)
 from kalibr_common import ConfigReader as cr
 import aslam_cv as acv
 import aslam_cameras_april as acv_april
@@ -10,7 +11,8 @@ import incremental_calibration as ic
 import kalibr_camera_calibration as kcc
 
 from matplotlib.backends.backend_pdf import PdfPages
-import mpl_toolkits.mplot3d.axes3d as p3
+# (mpl_toolkits.mplot3d unused in this file, and the apt/pip matplotlib
+# version mismatch on this machine breaks its import anyway -- dropped.)
 import cv2
 import numpy as np
 import pylab as pl

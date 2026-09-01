@@ -28,7 +28,6 @@
 #endif
 
 #include <boost/archive/basic_archive.hpp>
-#include <boost/detail/endian.hpp>
 
 
 namespace boost {

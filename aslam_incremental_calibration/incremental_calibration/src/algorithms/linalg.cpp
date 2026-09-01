@@ -26,7 +26,8 @@
 
 #include <cholmod.h>
 #include <SuiteSparseQR.hpp>
-#include <spqr.hpp>
+// <spqr.hpp> (the old plain-C SPQR header) no longer exists in modern
+// SuiteSparse; everything used here comes from <SuiteSparseQR.hpp>.
 
 #include "aslam/calibration/exceptions/OutOfBoundException.h"
 #include "aslam/calibration/exceptions/InvalidOperationException.h"
@@ -268,8 +269,14 @@ namespace aslam {
       if (cholmod == NULL)
         throw NullPointerException("cholmod", __FILE__, __LINE__,
           __PRETTY_FUNCTION__);
-      return 20.0 * static_cast<double>(A->nrow + A->ncol) * eps *
-        spqr_maxcolnorm<double>(A, cholmod);
+      // spqr_maxcolnorm() was an internal (non-public) SPQR helper in old
+      // SuiteSparse and no longer exists; replicate it with the colNorm()
+      // helper already defined above (max column 2-norm of A), matching
+      // the formula SuiteSparseQR itself uses for its default tolerance.
+      double maxColNorm = 0.0;
+      for (std::ptrdiff_t j = 0; j < static_cast<std::ptrdiff_t>(A->ncol); ++j)
+        maxColNorm = std::max(maxColNorm, colNorm(A, j));
+      return 20.0 * static_cast<double>(A->nrow + A->ncol) * eps * maxColNorm;
     }
 
     double svGap(const Eigen::VectorXd& sv, std::ptrdiff_t rank) {

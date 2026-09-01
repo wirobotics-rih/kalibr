@@ -445,8 +445,22 @@ namespace aslam {
     template<typename I>
     void Cholmod<I>::getR(cholmod_sparse* A, cholmod_sparse** R) {
       cholmod_sparse* qrJ = cholmod_l_transpose(A, 1, &_cholmod);
-      SuiteSparseQR<double>(SPQR_ORDERING_FIXED, SPQR_NO_TOL, qrJ->ncol, 0,
-        qrJ, NULL, NULL, NULL, NULL, R, NULL, NULL, NULL, NULL, &_cholmod);
+      // Newer SuiteSparse (>= 5) overload sets can no longer deduce the
+      // "Int" template parameter from a call that mixes untyped NULL/0
+      // literals with a size_t econ argument (as the historical call below
+      // did), so the template arguments and every output pointer are now
+      // spelled out explicitly to pick the
+      // "[Q,R,E] = qr(A), full form, discarding Q/Z/H" overload.
+      cholmod_sparse* Zsparse = NULL;
+      cholmod_dense* Zdense = NULL;
+      SuiteSparse_long* E = NULL;
+      cholmod_sparse* H = NULL;
+      SuiteSparse_long* HPinv = NULL;
+      cholmod_dense* HTau = NULL;
+      SuiteSparseQR<double, SuiteSparse_long>(SPQR_ORDERING_FIXED, SPQR_NO_TOL,
+        static_cast<SuiteSparse_long>(qrJ->ncol), 0,
+        qrJ, NULL, NULL, &Zsparse, &Zdense, R, &E, &H, &HPinv, &HTau,
+        &_cholmod);
       SM_ASSERT_EQ(Exception, _cholmod.status, CHOLMOD_OK,
         "QR factorization failed");
       CholmodIndexTraits<index_t>::free_sparse(&qrJ, &_cholmod);

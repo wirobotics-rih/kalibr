@@ -30,6 +30,13 @@
 #include <string>
 
 #include <cholmod.h>
+// Pulled in directly (rather than forward-declared) because SuiteSparse
+// >= 6 templates SuiteSparseQR_factorization on both the entry type and
+// an index type (defaulted to int64_t); a hand-written forward
+// declaration here would conflict with (or shadow, leaving the type
+// incomplete at points of use below) the real declaration that also
+// comes in transitively via aslam/backend/Cholmod.hpp.
+#include <SuiteSparseQR.hpp>
 
 #include <Eigen/Core>
 
@@ -37,8 +44,6 @@
 #include <aslam/backend/LinearSystemSolver.hpp>
 
 #include "aslam/calibration/core/LinearSolverOptions.h"
-
-template <typename Entry> struct SuiteSparseQR_factorization;
 
 namespace sm {
 

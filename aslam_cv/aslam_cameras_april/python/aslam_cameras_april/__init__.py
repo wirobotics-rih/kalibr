@@ -1,16 +1,17 @@
 # Import the numpy to Eigen type conversion.
 import numpy_eigen
-import os
 import aslam_cv
 
+# Try the actual import rather than checking a file path on disk -- see the
+# comment in aslam_cv/__init__.py for why the old realpath+isfile check
+# always reported "not compiled" under colcon's --symlink-install.
 isCompiled = False
-pathToSo = os.path.dirname(os.path.realpath(__file__))
-if os.path.isfile(os.path.join(pathToSo,"libaslam_cameras_april_python.so")):    
+try:
     # Import the the C++ exports from your package library.
     from .libaslam_cameras_april_python import *
     # Import other files in the directory
     # from mypyfile import *
     isCompiled = True
-else:
+except ImportError:
     print("Warning: the package aslam_cameras_april_python is not compiled.")
-    PACKAGE_IS_NOT_COMPILED = True;
+    PACKAGE_IS_NOT_COMPILED = True

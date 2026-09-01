@@ -1,22 +1,29 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.8)
 project(aslam_backend_expressions)
 
 set(CMAKE_CXX_STANDARD 14)
 
-
-find_package(catkin REQUIRED COMPONENTS aslam_backend sm_boost sm_random sm_kinematics sparse_block_matrix sm_timing)
+find_package(ament_cmake REQUIRED)
+find_package(aslam_backend REQUIRED)
+find_package(sm_boost REQUIRED)
+find_package(sm_random REQUIRED)
+find_package(sm_kinematics REQUIRED)
+find_package(sparse_block_matrix REQUIRED)
+find_package(sm_timing REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system)
 
-catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS sparse_block_matrix
+include_directories(include
+  ${aslam_backend_INCLUDE_DIRS}
+  ${sm_boost_INCLUDE_DIRS}
+  ${sm_random_INCLUDE_DIRS}
+  ${sm_kinematics_INCLUDE_DIRS}
+  ${sparse_block_matrix_INCLUDE_DIRS}
+  ${sm_timing_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS}
 )
 
-include_directories(include ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
-
-add_library(${PROJECT_NAME}
+add_library(${PROJECT_NAME} SHARED
   src/RotationExpression.cpp
   src/RotationExpressionNode.cpp
   src/RotationQuaternion.cpp
@@ -54,47 +61,29 @@ add_library(${PROJECT_NAME}
   src/MapTransformation.cpp
 
   src/MatrixBasic.cpp
-  src/MatrixExpression.cpp
-  src/MatrixExpressionNode.cpp
 )
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-
-##################
-## Installation ##
-##################
+target_link_libraries(${PROJECT_NAME}
+  ${aslam_backend_LIBRARIES}
+  ${sm_boost_LIBRARIES}
+  ${sm_random_LIBRARIES}
+  ${sm_kinematics_LIBRARIES}
+  ${sparse_block_matrix_LIBRARIES}
+  ${sm_timing_LIBRARIES}
+  ${Boost_LIBRARIES}
+)
 
 install(TARGETS ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
 )
 
-## Mark cpp header files for installation
 install(DIRECTORY include/
-  DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
+  DESTINATION include
 )
 
-#############
-## Testing ##
-#############
+ament_export_include_directories(include)
+ament_export_libraries(${PROJECT_NAME})
+ament_export_dependencies(aslam_backend sm_boost sm_random sm_kinematics sparse_block_matrix sm_timing Boost)
 
-if(CATKIN_ENABLE_TESTING)
-  # Avoid clash with tr1::tuple: https://code.google.com/p/googletest/source/browse/trunk/README?r=589#257
-  add_definitions(-DGTEST_USE_OWN_TR1_TUPLE=0)
-
-  # catkin_add_gtest(${PROJECT_NAME}_test
-  #   test/test_main.cpp
-  #   test/RotationExpression.cpp
-  #   test/HomogeneousExpression.cpp
-  #   test/MatrixAndEuclideanExpression.cpp
-  #   # \todo reenable after I can talk to Hannes.
-  #   # test/FixedPointNumberTest.cpp
-  #   test/GenericScalarExpressionTest.cpp
-  #   test/GenericMatrixExpression.cpp
-  #   test/QuaternionExpression.cpp
-  #   test/ScalarExpression.cpp
-  #   test/ErrorTest_Transformation.cpp
-  #   test/ErrorTest_Euclidean.cpp
-  #   )
-  # target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
-endif()
+ament_package()

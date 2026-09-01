@@ -1,32 +1,38 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.8)
 project(aslam_cameras)
 
-ADD_DEFINITIONS(-DASLAM_USE_ROS)
+add_definitions(-DASLAM_USE_ROS)
 
-find_package(catkin REQUIRED COMPONENTS
-  sm_common
-  sm_eigen
-  sm_boost
-  sm_kinematics
-  sm_logging
-  aslam_time
-  sm_opencv
-  sm_property_tree
-  opencv2_catkin
-  sm_random
-)
+find_package(ament_cmake REQUIRED)
+find_package(sm_common REQUIRED)
+find_package(sm_eigen REQUIRED)
+find_package(sm_boost REQUIRED)
+find_package(sm_kinematics REQUIRED)
+find_package(sm_logging REQUIRED)
+find_package(aslam_time REQUIRED)
+find_package(sm_opencv REQUIRED)
+find_package(sm_property_tree REQUIRED)
+find_package(sm_random REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system serialization filesystem)
 find_package(Eigen3 REQUIRED)
+find_package(OpenCV REQUIRED)
 
-catkin_package(
-  LIBRARIES ${PROJECT_NAME}
-  INCLUDE_DIRS include
-  DEPENDS Boost
+include_directories(include
+  ${sm_common_INCLUDE_DIRS}
+  ${sm_eigen_INCLUDE_DIRS}
+  ${sm_boost_INCLUDE_DIRS}
+  ${sm_kinematics_INCLUDE_DIRS}
+  ${sm_logging_INCLUDE_DIRS}
+  ${aslam_time_INCLUDE_DIRS}
+  ${sm_opencv_INCLUDE_DIRS}
+  ${sm_property_tree_INCLUDE_DIRS}
+  ${sm_random_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIR}
+  ${Boost_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
-include_directories(include ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
-
-add_library(${PROJECT_NAME} 
+add_library(${PROJECT_NAME} SHARED
   src/CameraGeometryBase.cpp
   src/GlobalShutter.cpp
   src/RollingShutter.cpp
@@ -49,43 +55,32 @@ add_library(${PROJECT_NAME}
   src/Landmark.cpp
   src/Image.cpp
 )
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-target_compile_options(${PROJECT_NAME} PUBLIC "-Wno-deprecated-copy") # TODO: Fix...
-
-if(CATKIN_ENABLE_TESTING)
-  # Avoid clash with tr1::tuple: https://code.google.com/p/googletest/source/browse/trunk/README?r=589#257
-  add_definitions(-DGTEST_USE_OWN_TR1_TUPLE=0)
-
-  catkin_add_gtest(${PROJECT_NAME}_tests
-    test/test_main.cpp
-    test/PinholeCameraGeometry.cpp
-    test/OmniCameraGeometry.cpp
-    test/ExtendedUnifiedCameraGeometry.cpp
-    test/DoubleSphereCameraGeometry.cpp
-    test/RadialTangentialDistortion.cpp
-    test/EquidistantDistortion.cpp
-    test/FovDistortion.cpp
-    test/Triangulation.cpp
-    test/testFrame.cpp
-    test/GridCalibration.cpp
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test
-  )
-  SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "${CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS} -lpthread")
-
-  target_link_libraries(${PROJECT_NAME}_tests ${PROJECT_NAME})
-endif()
-
-##################
-## Installation ##
-##################
+target_link_libraries(${PROJECT_NAME}
+  ${sm_common_LIBRARIES}
+  ${sm_eigen_LIBRARIES}
+  ${sm_boost_LIBRARIES}
+  ${sm_kinematics_LIBRARIES}
+  ${sm_logging_LIBRARIES}
+  ${aslam_time_LIBRARIES}
+  ${sm_property_tree_LIBRARIES}
+  ${sm_random_LIBRARIES}
+  ${Boost_LIBRARIES}
+  ${OpenCV_LIBS}
+)
+target_compile_options(${PROJECT_NAME} PUBLIC "-Wno-deprecated-copy")
 
 install(TARGETS ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
 )
 
-## Mark cpp header files for installation
 install(DIRECTORY include/
-  DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
+  DESTINATION include
 )
+
+ament_export_include_directories(include)
+ament_export_libraries(${PROJECT_NAME})
+ament_export_dependencies(sm_common sm_eigen sm_boost sm_kinematics sm_logging aslam_time sm_opencv sm_property_tree sm_random Boost OpenCV)
+
+ament_package()

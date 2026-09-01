@@ -29,13 +29,15 @@
 
 #include <Eigen/Core>
 
-struct cholmod_sparse_struct;
-typedef cholmod_sparse_struct cholmod_sparse;
-struct cholmod_dense_struct;
-typedef cholmod_dense_struct cholmod_dense;
-struct cholmod_common_struct;
-typedef cholmod_common_struct cholmod_common;
-template <typename Entry> struct SuiteSparseQR_factorization;
+// Pulled in directly (rather than hand-forward-declared) because
+// SuiteSparse >= 6 templates SuiteSparseQR_factorization on both the
+// entry type and an index type (defaulted to int64_t); a hand-written
+// single-parameter forward declaration here conflicts with the real
+// declaration once both are visible in the same translation unit (as
+// happens in linalg.cpp, which also needs the complete type for
+// factor->QRsym/QRnum member access).
+#include <cholmod.h>
+#include <SuiteSparseQR.hpp>
 
 namespace aslam {
   namespace calibration {

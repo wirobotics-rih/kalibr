@@ -1,10 +1,10 @@
 # Import the numpy to Eigen type conversion.
-import roslib; roslib.load_manifest('numpy_eigen'); import numpy_eigen
+import numpy_eigen
 # Import the sm library
-import roslib; roslib.load_manifest('sm_python'); import sm
+import sm
 # Import the aslam backend
-import roslib; roslib.load_manifest('aslam_backend'); import aslam_backend
-import roslib; roslib.load_manifest('aslam_cv_python'); import aslam_cv
+import aslam_backend
+import aslam_cv
 # Import the the C++ exports from your package library.
 from .libaslam_cv_backend_python import *
 # Import other files in the directory
@@ -38,7 +38,7 @@ class DistortedOmniRs(CameraModel):
     geometry = aslam_cv.DistortedOmniRsCameraGeometry
     reprojectionError = DistortedOmniRsReprojectionError
     reprojectionErrorSimple = DistortedOmniRsReprojectionErrorSimple
-    reprojectionErrorAdaptiveCovariance = DistortedOmniRsReprojectionErrorAdaptiveCovariance
+    # reprojectionErrorAdaptiveCovariance omitted -- needs bsplines/aslam_splines (rolling-shutter adaptive covariance), which are COLCON_IGNORE'd: not needed by kalibr_calibrate_cameras/kalibr_camera_calibration.
     designVariable = DistortedOmniRsCameraGeometryDesignVariable
     projectionType = aslam_cv.DistortedOmniProjection
     distortionType = aslam_cv.RadialTangentialDistortion
@@ -59,7 +59,7 @@ class DistortedPinholeRs(CameraModel):
     geometry = aslam_cv.DistortedPinholeRsCameraGeometry
     reprojectionError = DistortedPinholeRsReprojectionError
     reprojectionErrorSimple = DistortedPinholeRsReprojectionErrorSimple
-    reprojectionErrorAdaptiveCovariance = DistortedPinholeRsReprojectionErrorAdaptiveCovariance
+    # reprojectionErrorAdaptiveCovariance omitted -- see DistortedOmniRs above.
     designVariable = DistortedPinholeRsCameraGeometryDesignVariable
     projectionType = aslam_cv.DistortedPinholeProjection
     distortionType = aslam_cv.RadialTangentialDistortion
@@ -80,7 +80,7 @@ class EquidistantPinholeRs(CameraModel):
     geometry = aslam_cv.EquidistantDistortedPinholeRsCameraGeometry
     reprojectionError = EquidistantDistortedPinholeRsReprojectionError
     reprojectionErrorSimple = EquidistantDistortedPinholeRsReprojectionErrorSimple
-    reprojectionErrorAdaptiveCovariance = EquidistantDistortedPinholeRsReprojectionErrorAdaptiveCovariance
+    # reprojectionErrorAdaptiveCovariance omitted -- see DistortedOmniRs above.
     designVariable = EquidistantDistortedPinholeRsCameraGeometryDesignVariable
     projectionType = aslam_cv.EquidistantPinholeProjection
     distortionType = aslam_cv.EquidistantDistortion

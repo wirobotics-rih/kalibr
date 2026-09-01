@@ -1,6 +1,10 @@
 from __future__ import print_function #handle print in 2.x python
 import sm
-from sm import PlotCollection
+# PlotCollection needs wxPython, which isn't installed (and doesn't have a
+# prebuilt wheel for this platform -- building from source needs a full
+# wxWidgets/GTK toolchain). Deferred into generateReport() below, only
+# imported when showOnScreen actually needs the interactive wx window --
+# the PDF report itself (the normal, non-interactive path) never touches it.
 from kalibr_common import ConfigReader as cr
 import aslam_cv as acv
 import aslam_cameras_april as acv_april
@@ -18,7 +22,8 @@ except ImportError:
     # Python 3
     from io import StringIO
 import matplotlib.patches as patches
-import mpl_toolkits.mplot3d.axes3d as p3
+# (mpl_toolkits.mplot3d unused in this file, and the apt/pip matplotlib
+# version mismatch on this machine breaks its import anyway -- dropped.)
 import cv2
 import numpy as np
 import pylab as pl
@@ -415,7 +420,17 @@ def generateReport(cself, filename="report.pdf", showOnScreen=True, graph=None, 
     
     #plotter
     figs = list()
-    plotter = PlotCollection.PlotCollection("Calibration report")
+    if showOnScreen:
+        from sm import PlotCollection
+        plotter = PlotCollection.PlotCollection("Calibration report")
+    else:
+        # No wx window needed -- every plotter.add_figure() call below is
+        # only feeding the interactive display; the PDF itself is written
+        # from `figs` directly further down, independent of `plotter`.
+        class _NoOpPlotter:
+            def add_figure(self, *args, **kwargs): pass
+            def show(self): pass
+        plotter = _NoOpPlotter()
     offset = 3010
     
     #Output calibration results in text form.
