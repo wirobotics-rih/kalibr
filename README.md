@@ -1,3 +1,14 @@
+> **This fork is not the Kalibr toolbox.** It is the ROS 2 / Ubuntu 24.04 port
+> of the 26 packages ALLEX's dashboard links against — `aslam_cv`,
+> `aslam_cameras_april` and `aslam_cv_backend` plus their dependency closure —
+> and nothing else. The offline calibrators the README below describes
+> (`kalibr_calibrate_cameras`, the IMU and rolling-shutter tools),
+> `incremental_calibration`, the spline packages, the catkin build helpers and
+> the ROS 1 Docker images have all been removed: nothing in that workspace ran
+> them, and colcon was building them on every clean build. They are in this
+> branch's history if they are ever wanted back. The badges below are upstream's
+> and describe upstream's ROS 1 CI, which this branch does not have.
+
 ![Kalibr](https://raw.githubusercontent.com/wiki/ethz-asl/kalibr/images/kalibr_small.png)
 
 [![ROS1 Ubuntu 20.04](https://github.com/ethz-asl/kalibr/actions/workflows/docker_2004_build.yaml/badge.svg)](https://github.com/ethz-asl/kalibr/actions/workflows/docker_2004_build.yaml)
