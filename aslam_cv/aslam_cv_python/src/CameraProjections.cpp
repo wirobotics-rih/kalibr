@@ -239,10 +239,17 @@ void exportRadialTangentialDistortionFunctions() {
   rtDistortion.def(
       init<double, double, double, double>(
           ("RadialTangentialDistortion(double k1, double k2, double p1, double p2)")));
+  // Five-argument form in OpenCV's order, so a cv2.calibrateCamera coefficient
+  // vector goes in as it comes out. The four-argument form above still means
+  // k3 = 0, which is upstream's model.
+  rtDistortion.def(
+      init<double, double, double, double, double>(
+          ("RadialTangentialDistortion(double k1, double k2, double p1, double p2, double k3)")));
   rtDistortion.def("k1", &RadialTangentialDistortion::k1);
   rtDistortion.def("k2", &RadialTangentialDistortion::k2);
   rtDistortion.def("p1", &RadialTangentialDistortion::p1);
   rtDistortion.def("p2", &RadialTangentialDistortion::p2);
+  rtDistortion.def("k3", &RadialTangentialDistortion::k3);
   //rtDistortion.def("getLinesPack", &RadialTangentialDistortion::getLinesPack);
   //rtDistortion.def("distortionError", &RadialTangentialDistortion::distortionError);
 

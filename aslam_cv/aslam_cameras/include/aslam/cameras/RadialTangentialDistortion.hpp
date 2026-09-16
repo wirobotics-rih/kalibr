@@ -17,8 +17,42 @@ namespace cameras {
 
 /**
  * \class RadialTangentialDistortion
- * \brief An implementation of the standard, four parameter distortion model for pinhole cameras.
- *        
+ * \brief The Brown-Conrady distortion model for pinhole cameras, with THREE
+ *        radial terms and two tangential ones.
+ *
+ * Upstream aslam_cv truncates the radial series after k2:
+ *
+ *     rad = k1 r^2 + k2 r^4
+ *
+ * which is the classic plumb-bob of photogrammetry, and upstream's answer for a
+ * lens that needs more is EquidistantDistortion. OpenCV's `plumb_bob` carries a
+ * third term, and every intrinsic this workspace solves is fitted by OpenCV, so
+ * without k3 our K cannot be handed to this model at all -- it has to be
+ * undistorted away first, which puts an iterative inverse between the corners
+ * and the optimiser. This adds the term instead:
+ *
+ *     rad = k1 r^2 + k2 r^4 + k3 r^6
+ *
+ * Measured on p005 (ALLEX unit) before doing so, refitting each camera with k3
+ * pinned at zero rather than deleting it from a five-term fit:
+ *
+ *     camera      terms   reproj rms   undistortion split-half   board dome
+ *     wide          5       0.9115          14.0 px               1.38 mm
+ *     wide          4       1.8007          20.1 px               2.09 mm
+ *     realsense     5       0.9362          23.4 px               0.92 mm
+ *     realsense     4       1.0286          24.2 px               0.88 mm
+ *
+ * The board's bow is measured independently (1.36 mm, by two vendor-calibrated
+ * cameras that fit no distortion model), so the wide's 2.09 is not a tie-break
+ * -- a four-term fit of that lens is wrong about the target by 0.7 mm and
+ * reprojects twice as badly. The RealSense would survive on four; the wide
+ * would not.
+ *
+ * PARAMETER ORDER IS OPENCV'S: k1, k2, p1, p2, k3. k3 is appended rather than
+ * placed after k2 so that a coefficient vector from cv2.calibrateCamera goes
+ * into setParameters unchanged, and so that the first four keep the meaning
+ * every existing caller gives them.
+ *
  * \todo outline the math here and provide a reference. What is the original reference?
  *
  *
@@ -37,7 +71,7 @@ class RadialTangentialDistortion {
  public:
 
   enum {
-    IntrinsicsDimension = 4
+    IntrinsicsDimension = 5
   };
   enum {
     DesignVariableDimension = IntrinsicsDimension
@@ -46,8 +80,13 @@ class RadialTangentialDistortion {
   /// \brief The default constructor sets all values to zero. 
   RadialTangentialDistortion();
 
-  /// \brief A constructor that initializes all values.
+  /// \brief A constructor that initializes all values. k3 defaults to zero,
+  ///        which is exactly upstream's model, so existing callers are unchanged.
   RadialTangentialDistortion(double k1, double k2, double p1, double p2);
+
+  /// \brief A constructor that initializes all values, OpenCV's order.
+  RadialTangentialDistortion(double k1, double k2, double p1, double p2,
+                             double k3);
 
   RadialTangentialDistortion(const sm::PropertyTree & config);
 
@@ -147,17 +186,24 @@ class RadialTangentialDistortion {
   double p2() {
     return _p2;
   }
+  /// \brief the third radial distortion parameter
+  double k3() {
+    return _k3;
+  }
 
   void clear() {
     _k1 = 0.0;
     _k2 = 0.0;
     _p1 = 0.0;
     _p2 = 0.0;
+    _k3 = 0.0;
   }
 
   /// \brief Compatibility with boost::serialization.
+  /// Bumped to 1 when k3 was added. `load` reads a version-0 archive and
+  /// leaves k3 at zero, which is what that archive meant.
   enum {
-    CLASS_SERIALIZATION_VERSION = 0
+    CLASS_SERIALIZATION_VERSION = 1
   };BOOST_SERIALIZATION_SPLIT_MEMBER();
   template<class Archive>
   void load(Archive & ar, const unsigned int version);
@@ -176,6 +222,9 @@ class RadialTangentialDistortion {
   double _p1;
   /// \brief the second tangential distortion parameter
   double _p2;
+  /// \brief the third radial distortion parameter. Last, to keep OpenCV's
+  ///        coefficient order (k1, k2, p1, p2, k3).
+  double _k3;
 
 };
 

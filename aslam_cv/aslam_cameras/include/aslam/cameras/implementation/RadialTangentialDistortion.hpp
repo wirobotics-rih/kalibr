@@ -18,7 +18,8 @@ void RadialTangentialDistortion::distort(
   my2_u = y[1] * y[1];
   mxy_u = y[0] * y[1];
   rho2_u = mx2_u + my2_u;
-  rad_dist_u = _k1 * rho2_u + _k2 * rho2_u * rho2_u;
+  rad_dist_u = _k1 * rho2_u + _k2 * rho2_u * rho2_u
+      + _k3 * rho2_u * rho2_u * rho2_u;
   y[0] += y[0] * rad_dist_u + 2.0 * _p1 * mxy_u + _p2 * (rho2_u + 2.0 * mx2_u);
   y[1] += y[1] * rad_dist_u + 2.0 * _p2 * mxy_u + _p1 * (rho2_u + 2.0 * my2_u);
 
@@ -49,14 +50,19 @@ void RadialTangentialDistortion::distort(
   mxy_u = y[0] * y[1];
   rho2_u = mx2_u + my2_u;
 
-  rad_dist_u = _k1 * rho2_u + _k2 * rho2_u * rho2_u;
+  rad_dist_u = _k1 * rho2_u + _k2 * rho2_u * rho2_u
+      + _k3 * rho2_u * rho2_u * rho2_u;
 
+  const double rho4_u = rho2_u * rho2_u;
   J(0, 0) = 1 + rad_dist_u + _k1 * 2.0 * mx2_u + _k2 * rho2_u * 4 * mx2_u
+      + _k3 * rho4_u * 6 * mx2_u
       + 2.0 * _p1 * y[1] + 6 * _p2 * y[0];
   J(1, 0) = _k1 * 2.0 * y[0] * y[1] + _k2 * 4 * rho2_u * y[0] * y[1]
+      + _k3 * 6 * rho4_u * y[0] * y[1]
       + _p1 * 2.0 * y[0] + 2.0 * _p2 * y[1];
   J(0, 1) = J(1, 0);
   J(1, 1) = 1 + rad_dist_u + _k1 * 2.0 * my2_u + _k2 * rho2_u * 4 * my2_u
+      + _k3 * rho4_u * 6 * my2_u
       + 6 * _p1 * y[1] + 2.0 * _p2 * y[0];
 
   y[0] += y[0] * rad_dist_u + 2.0 * _p1 * mxy_u + _p2 * (rho2_u + 2.0 * mx2_u);
@@ -157,27 +163,30 @@ void RadialTangentialDistortion::distortParameterJacobian(
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE_OR_DYNAMIC(
       Eigen::MatrixBase<DERIVED_Y>, 2);
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE_OR_DYNAMIC(
-      Eigen::MatrixBase<DERIVED_JD>, 2, 4);
+      Eigen::MatrixBase<DERIVED_JD>, 2, 5);
 
   double y0 = imageY[0];
   double y1 = imageY[1];
   double r2 = y0 * y0 + y1 * y1;
   double r4 = r2 * r2;
+  double r6 = r4 * r2;
 
   Eigen::MatrixBase<DERIVED_JD> & J =
       const_cast<Eigen::MatrixBase<DERIVED_JD> &>(outJd);
-  J.derived().resize(2, 4);
+  J.derived().resize(2, 5);
   J.setZero();
 
   J(0, 0) = y0 * r2;
   J(0, 1) = y0 * r4;
   J(0, 2) = 2.0 * y0 * y1;
   J(0, 3) = r2 + 2.0 * y0 * y0;
+  J(0, 4) = y0 * r6;
 
   J(1, 0) = y1 * r2;
   J(1, 1) = y1 * r4;
   J(1, 2) = r2 + 2.0 * y1 * y1;
   J(1, 3) = 2.0 * y0 * y1;
+  J(1, 4) = y1 * r6;
 
 }
 
@@ -188,6 +197,7 @@ void RadialTangentialDistortion::save(Archive & ar,
   ar << BOOST_SERIALIZATION_NVP(_k2);
   ar << BOOST_SERIALIZATION_NVP(_p1);
   ar << BOOST_SERIALIZATION_NVP(_p2);
+  ar << BOOST_SERIALIZATION_NVP(_k3);
 }
 
 template<class Archive>
@@ -201,6 +211,11 @@ void RadialTangentialDistortion::load(Archive & ar,
   ar >> BOOST_SERIALIZATION_NVP(_k2);
   ar >> BOOST_SERIALIZATION_NVP(_p1);
   ar >> BOOST_SERIALIZATION_NVP(_p2);
+  // A version-0 archive predates k3 and meant zero, which is upstream's model.
+  if (version >= 1)
+    ar >> BOOST_SERIALIZATION_NVP(_k3);
+  else
+    _k3 = 0.0;
 }
 
 }  // namespace cameras
